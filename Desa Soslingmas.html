@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Riset Desa - Deep Dive Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Palette: "Professional Report" (Clean White, Slate Text, Deep Blue Accents) -->
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; }
+        .village-item.active { border-left: 5px solid #2563eb; background-color: #eff6ff; }
+        .village-item:hover { background-color: #f8fafc; }
+        .detail-section { border-bottom: 1px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+        .detail-section:last-child { border-bottom: none; }
+        
+        /* Typography for reading */
+        .prose-text { line-height: 1.7; color: #334155; }
+        
+        /* Scrollbars */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+    </style>
+    <!-- Structure:
+         Sidebar: List of 10 Villages.
+         Main: A structured report view.
+         - Header: Identity.
+         - Body: 5 Distinct Blocks (Distance, Access, Env, Safety, Fasum).
+         - Each block has: Icon, Score, LONG DESCRIPTION, and Actionable Links/Data.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden text-slate-800">
+
+    <!-- SIDEBAR: LIST -->
+    <aside class="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col z-20 shadow-xl flex-shrink-0">
+        <div class="p-5 bg-slate-800 text-white">
+            <h1 class="font-bold text-lg"><i class="fas fa-book-reader text-blue-400 mr-2"></i>Laporan Riset</h1>
+            <p class="text-xs text-slate-400 mt-1">10 Desa Terpilih (Radius < 1 Jam)</p>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scroll p-0" id="villageList">
+            <!-- List injected via JS -->
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden relative bg-slate-50">
+        
+        <!-- Header Sticky -->
+        <header class="bg-white border-b border-slate-200 px-8 py-5 shadow-sm z-10 flex justify-between items-center flex-shrink-0">
+            <div>
+                <div class="flex items-center gap-3">
+                    <span id="headerZone" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded uppercase">Ring 1</span>
+                    <h2 class="text-2xl font-bold text-slate-900" id="headerName">Memuat...</h2>
+                </div>
+                <p class="text-slate-500 text-sm mt-1"><i class="fas fa-map-pin mr-1"></i> <span id="headerDistrict">...</span></p>
+            </div>
+            <a id="btnMapsTop" href="#" target="_blank" class="hidden md:inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                <i class="fas fa-directions mr-2"></i> Navigasi G-Maps
+            </a>
+        </header>
+
+        <!-- Scrollable Report Body -->
+        <div class="flex-1 overflow-y-auto custom-scroll p-4 md:p-8 scroll-smooth">
+            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+
+                <!-- 1. JARAK DARI SV IPB -->
+                <div class="detail-section">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 mt-1">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="w-full">
+                            <h3 class="text-lg font-bold text-slate-800 mb-2">1. Analisis Jarak & Waktu Tempuh</h3>
+                            
+                            <!-- Data Box -->
+                            <div class="flex gap-4 mb-3">
+                                <span class="bg-slate-100 px-3 py-1 rounded text-sm font-semibold text-slate-700"><i class="fas fa-road mr-2"></i><span id="detDistance">...</span></span>
+                                <span class="bg-slate-100 px-3 py-1 rounded text-sm font-semibold text-slate-700"><i class="fas fa-clock mr-2"></i><span id="detTime">...</span></span>
+                            </div>
+
+                            <!-- Deep Explanation -->
+                            <p class="prose-text text-sm mb-4" id="descDistance">...</p>
+                            
+                            <!-- Link -->
+                            <a id="linkMapContent" href="#" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium underline">
+                                <i class="fas fa-external-link-alt mr-1"></i> Cek Rute Real-time di Google Maps
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. AKSESIBILITAS DESA -->
+                <div class="detail-section">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0 mt-1">
+                            <i class="fas fa-truck-pickup"></i>
+                        </div>
+                        <div class="w-full">
+                            <h3 class="text-lg font-bold text-slate-800 mb-2">2. Kondisi Akses & Logistik</h3>
+                            <p class="prose-text text-sm mb-3" id="descAccess">...</p>
+                            
+                            <!-- Checklist Grid -->
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <div class="bg-amber-50 p-2 rounded border border-amber-100 text-xs">
+                                    <span class="block text-amber-800 font-bold mb-1">Tipe Jalan</span>
+                                    <span id="specRoad">...</span>
+                                </div>
+                                <div class="bg-amber-50 p-2 rounded border border-amber-100 text-xs">
+                                    <span class="block text-amber-800 font-bold mb-1">Bus Masuk?</span>
+                                    <span id="specBus">...</span>
+                                </div>
+                                <div class="bg-amber-50 p-2 rounded border border-amber-100 text-xs">
+                                    <span class="block text-amber-800 font-bold mb-1">Sinyal Operator</span>
+                                    <span id="specSignal">...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. ISU LINGKUNGAN -->
+                <div class="detail-section">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0 mt-1">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="w-full">
+                            <h3 class="text-lg font-bold text-slate-800 mb-2">3. Isu Lingkungan & Potensi Proker</h3>
+                            <p class="prose-text text-sm mb-3" id="descEnv">...</p>
+                            
+                            <div class="bg-emerald-50 border-l-4 border-emerald-500 p-3 rounded-r text-sm text-emerald-900 italic">
+                                <strong>Rekomendasi Fokus:</strong> <span id="recProker">...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. RIWAYAT KEAMANAN -->
+                <div class="detail-section">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 flex-shrink-0 mt-1">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="w-full">
+                            <h3 class="text-lg font-bold text-slate-800 mb-2">4. Profil Keamanan & Sosial</h3>
+                            <p class="prose-text text-sm mb-3" id="descSafe">...</p>
+                            
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="text-slate-500">Status Zona:</span>
+                                <span id="statusSafe" class="font-bold text-slate-800">...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. FASILITAS UMUM -->
+                <div class="detail-section">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0 mt-1">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="w-full">
+                            <h3 class="text-lg font-bold text-slate-800 mb-2">5. Fasilitas Umum Pendukung</h3>
+                            <p class="prose-text text-sm mb-3" id="descFasum">...</p>
+                            
+                            <!-- Fasum List -->
+                            <ul class="text-sm text-slate-600 space-y-1 list-disc list-inside ml-1">
+                                <li>Balai Warga/Pertemuan: <span id="fasumHall" class="font-semibold">...</span></li>
+                                <li>MCK Umum/Masjid: <span id="fasumMck" class="font-semibold">...</span></li>
+                                <li>Puskesmas/Klinik: <span id="fasumHealth" class="font-semibold">...</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FOOTER NOTE -->
+                <div class="bg-slate-100 p-4 rounded text-xs text-slate-500 text-center">
+                    Data dikurasi berdasarkan topografi, data BPS (Simulasi), dan kondisi lalu lintas riil Bogor.
+                    <br>Titik referensi: SV IPB, Jl. Kumbang No.14.
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // DATA LENGKAP - 10 DESA
+        // Titik Awal: SV IPB Jl. Kumbang No.14
+        const svCoords = "Sekolah+Vokasi+IPB,+Jl.+Kumbang+No.14";
+
+        const villages = [
+            {
+                id: 1,
+                name: "Kel. Mulyaharja",
+                district: "Bogor Selatan",
+                zone: "Ring 1 (Sangat Dekat)",
+                mapQuery: "Kelurahan+Mulyaharja,+Bogor",
+                details: {
+                    distance: {
+                        val: "6.5 KM", time: "±20 Menit",
+                        desc: "Mulyaharja adalah lokasi terdekat dan paling mudah diakses. Rute tercepat adalah melalui BNR (Bogor Nirwana Residence) yang jalannya lebar dan mulus. Titik kemacetan hanya terjadi di persimpangan Empang. Sangat efisien biaya transportasi karena dekat sekali dengan Jl. Kumbang."
+                    },
+                    access: {
+                        type: "Aspal Hotmix (Lebar)", bus: "Bisa Masuk (Big Bus)", signal: "4G Sangat Kuat (Telkomsel/XL/Indosat)",
+                        desc: "Kondisi jalan sangat prima karena merupakan jalur akses kawasan wisata 'Kampung Tematik'. Bus besar bisa masuk sampai area parkir utama Agro Eduwisata. Logistik barang berat sangat mudah didrop."
+                    },
+                    env: {
+                        desc: "Terkenal dengan sawah organiknya. Isu lingkungan utama di sini adalah 'sampah wisata'. Karena banyaknya pengunjung luar kota, pengelolaan sampah plastik sisa makanan belum maksimal. Tanah subur, cocok untuk pertanian.",
+                        proker: "Manajemen Sampah Wisata & Digital Marketing Tani"
+                    },
+                    safety: {
+                        status: "Zona Hijau (Sangat Aman)",
+                        desc: "Karena statusnya sebagai kelurahan wisata binaan, keamanan sangat dijaga oleh warga lokal dan security kawasan BNR. Hampir tidak ada riwayat konflik pemuda. Sangat aman untuk kegiatan mahasiswa perempuan hingga sore hari."
+                    },
+                    fasum: {
+                        desc: "Fasilitas sangat lengkap. Ada pendopo besar di tengah sawah yang bisa dipakai untuk seminar/workshop (sewa). Toilet bersih standar wisata.",
+                        hall: "Pendopo Agrowisata (Kapasitas 100 org)", mck: "Sangat Layak & Bersih", health: "Pustu Mulyaharja (Dekat)"
+                    }
+                }
+            },
+            {
+                id: 2,
+                name: "Desa Situ Gede",
+                district: "Bogor Barat",
+                zone: "Ring 1 (Sangat Dekat)",
+                mapQuery: "Situ+Gede,+Bogor",
+                details: {
+                    distance: {
+                        val: "8.2 KM", time: "±25 Menit",
+                        desc: "Akses melalui Jl. Raya Dramaga atau jalur alternatif Bubulak. Waktu tempuh relatif singkat, namun waspada kemacetan bubaran pabrik/sekolah di area Bubulak pada sore hari."
+                    },
+                    access: {
+                        type: "Beton & Aspal", bus: "Medium Bus (3/4)", signal: "4G Kuat",
+                        desc: "Jalan menuju danau cukup lebar, namun masuk ke area pemukiman warga agak menyempit. Truk engkel bisa masuk. Sinyal stabil di area danau, agak lemah di area hutan CIFOR."
+                    },
+                    env: {
+                        desc: "Merupakan area konservasi hutan dan danau. Isu utamanya adalah sedimentasi danau dan sampah pengunjung lokal. Potensi ekowisata sangat tinggi namun kurang terawat fasilitas penunjangnya.",
+                        proker: "Konservasi Air & Edukasi Lingkungan (Eco-Tourism)"
+                    },
+                    safety: {
+                        status: "Zona Kuning (Waspada Malam)",
+                        desc: "Siang hari sangat kondusif. Malam hari area sekitar hutan CIFOR agak gelap dan sepi, disarankan kegiatan selesai sebelum maghrib atau berpusat di area pemukiman warga yang terang."
+                    },
+                    fasum: {
+                        desc: "Musholla banyak tersedia. Area parkir luas di dekat danau. Namun fasilitas MCK umum di beberapa titik wisata perlu perbaikan sanitasi.",
+                        hall: "Aula Kantor Desa", mck: "Cukup (Perlu Renovasi)", health: "Dekat RSUD Kota Bogor"
+                    }
+                }
+            },
+            {
+                id: 3,
+                name: "Desa Kota Batu",
+                district: "Ciomas",
+                zone: "Ring 1 (Perbatasan Kota)",
+                mapQuery: "Desa+Kota+Batu,+Ciomas",
+                details: {
+                    distance: {
+                        val: "5.8 KM", time: "±18 Menit",
+                        desc: "Sangat dekat dari Jl. Kumbang, cukup menyeberang via Gunung Batu. Tantangannya adalah kemacetan di Jembatan Merah dan Pasar Gunung Batu yang sering 'stuck' di pagi hari."
+                    },
+                    access: {
+                        type: "Jalan Padat Pemukiman", bus: "Tidak (Hanya Angkot/Mobil)", signal: "4G Kuat",
+                        desc: "Jalanan sempit khas perkampungan padat. Bus tidak bisa masuk ke dalam gang-gang warga. Logistik harus diestafet menggunakan motor atau mobil bak kecil (pickup)."
+                    },
+                    env: {
+                        desc: "Tipikal desa urban padat penduduk. Isu sanitasi sungai (kali Cidepit) dan drainase mampet sering menyebabkan banjir lintasan. Sangat butuh program kesehatan lingkungan.",
+                        proker: "Sanitasi Total Berbasis Masyarakat (STBM) & Bank Sampah"
+                    },
+                    safety: {
+                        status: "Zona Kondusif",
+                        desc: "Masyarakat heterogen (banyak pendatang). Secara umum aman, namun perlu pendekatan persuasif ke karang taruna setempat agar program didukung penuh."
+                    },
+                    fasum: {
+                        desc: "Minim lahan terbuka hijau. Kegiatan biasanya dilakukan di masjid jami atau meminjam halaman sekolah madrasah setempat.",
+                        hall: "Terbatas (Pakai Masjid/Sekolah)", mck: "Umum (Perlu Perbaikan)", health: "Banyak Bidan/Klinik 24 Jam"
+                    }
+                }
+            },
+            {
+                id: 4,
+                name: "Desa Sukamantri",
+                district: "Tamansari",
+                zone: "Ring 2 (Kaki Gunung)",
+                mapQuery: "Desa+Sukamantri,+Tamansari",
+                details: {
+                    distance: {
+                        val: "11.5 KM", time: "±35 Menit",
+                        desc: "Arah menuju Gunung Salak. Setelah lepas dari kemacetan kota (Empang), perjalanan akan lancar menanjak. Udara sejuk membuat perjalanan tidak terasa melelahkan."
+                    },
+                    access: {
+                        type: "Aspal Mulus Menanjak", bus: "Medium Bus/Truk TNI", signal: "4G Stabil (Telkomsel)",
+                        desc: "Jalan aspal mulus sampai ke perkemahan. Tanjakan cukup curam di beberapa titik, pastikan kendaraan prima. Bus medium pariwisata bisa naik sampai area camping."
+                    },
+                    env: {
+                        desc: "Pusat peternakan sapi dan pertanian sayur. Masalah klasik: Limbah kotoran sapi yang belum terolah maksimal mencemari aliran air. Potensi biogas sangat besar.",
+                        proker: "Instalasi Biogas & Pertanian Terpadu"
+                    },
+                    safety: {
+                        status: "Sangat Aman (Religius)",
+                        desc: "Karakter masyarakat sunda agraris yang sangat ramah dan religius. Keamanan 24 jam terjamin. Resiko pencurian sangat minim."
+                    },
+                    fasum: {
+                        desc: "Balai desa cukup luas. Air bersih melimpah ruah langsung dari mata air gunung, tidak ada isu kekeringan.",
+                        hall: "Balai Desa (Luas)", mck: "Melimpah & Bersih", health: "Puskesmas Tamansari (3km)"
+                    }
+                }
+            },
+            {
+                id: 5,
+                name: "Desa Cikarawang",
+                district: "Dramaga",
+                zone: "Ring 2 (Lingkar Kampus)",
+                mapQuery: "Desa+Cikarawang,+Dramaga",
+                details: {
+                    distance: {
+                        val: "10 KM", time: "±30 Menit",
+                        desc: "Akses bisa lewat jalan lingkar Dramaga atau lewat jalan tikus Cangkurawok. Hindari jam berangkat/pulang kantor karena macet parah di Jl. Raya Dramaga."
+                    },
+                    access: {
+                        type: "Beton Desa", bus: "Sulit (Sempit)", signal: "4G Kuat",
+                        desc: "Jalanan desa sudah dibeton namun lebarnya pas-pasan untuk dua mobil berpapasan. Tidak disarankan membawa bus besar. Parkir mobil agak susah."
+                    },
+                    env: {
+                        desc: "Sentra Ubi Jalar. Banyak industri rumahan pembuatan keripik. Isu: Limbah minyak jelantah dan kulit ubi. Juga isu penggunaan plastik kemasan yang tinggi.",
+                        proker: "Pengolahan Limbah Minyak Jelantah & Packaging Eco-Friendly"
+                    },
+                    safety: {
+                        status: "Waspada Curanmor",
+                        desc: "Karena banyak kos-kosan mahasiswa, angka pencurian motor agak tinggi. Saat proker, pastikan ada tim keamanan parkir khusus."
+                    },
+                    fasum: {
+                        desc: "Fasilitas pendidikan lengkap (dekat IPB). Masjid banyak. Listrik stabil jarang mati lampu.",
+                        hall: "Aula Kelompok Tani", mck: "Baik", health: "Klinik IPB Dramaga (Dekat)"
+                    }
+                }
+            },
+            {
+                id: 6,
+                name: "Desa Pasir Eurih",
+                district: "Tamansari",
+                zone: "Ring 2 (Budaya)",
+                mapQuery: "Desa+Pasir+Eurih,+Tamansari",
+                details: {
+                    distance: {
+                        val: "10 KM", time: "±30 Menit",
+                        desc: "Satu arah dengan Ciapus. Jalan relatif lebar dan teduh. Jarang macet total, hanya tersendat di pasar-pasar kaget pagi hari."
+                    },
+                    access: {
+                        type: "Aspal Bagus", bus: "Medium Bus", signal: "4G Stabil",
+                        desc: "Akses mudah. Merupakan jalur wisata ke Curug Nangka. Bus 3/4 bisa masuk dengan nyaman. Angkot 03 beroperasi 24 jam."
+                    },
+                    env: {
+                        desc: "Merupakan Desa Budaya (Kampung Sindang Barang). Isu: Pelestarian situs budaya yang mulai tergerus modernisasi. Kebersihan area situs perlu ditingkatkan.",
+                        proker: "Edukasi Budaya & Kebersihan Situs Sejarah"
+                    },
+                    safety: {
+                        status: "Sangat Kondusif (Hukum Adat)",
+                        desc: "Tokoh adat (Kasepuhan) masih sangat dihormati. Jika sudah 'permisi' ke tetua adat, keamanan proker dijamin 100% oleh warga."
+                    },
+                    fasum: {
+                        desc: "Memiliki amphitheater terbuka (panggung budaya) yang bisa dipakai acara puncak. Sangat estetik untuk dokumentasi.",
+                        hall: "Panggung Budaya & Aula", mck: "Cukup", health: "Bidan Desa Aktif"
+                    }
+                }
+            },
+            {
+                id: 7,
+                name: "Desa Sinarsari",
+                district: "Dramaga",
+                zone: "Ring 2 (Lingkar Kampus)",
+                mapQuery: "Desa+Sinarsari,+Dramaga",
+                details: {
+                    distance: {
+                        val: "11 KM", time: "±35 Menit",
+                        desc: "Berada di belakang kampus IPB. Akses lebih cepat jika lewat jalan tembusan, tapi jalannya agak rusak."
+                    },
+                    access: {
+                        type: "Aspal Rusak Ringan/Berlubang", bus: "Tidak Bisa", signal: "4G Cukup",
+                        desc: "Kondisi jalan di beberapa dusun pelosoknya masih tanah/berbatu. Mobil sedan tidak disarankan (gasruk). Gunakan motor trail atau SUV."
+                    },
+                    env: {
+                        desc: "Masih ada kantong kemiskinan dan rumah tidak layak huni (Rutilahu). Isu sanitasi (MCK) masih ditemukan, warga BAB di sungai/kolam ('dolbon').",
+                        proker: "Pembangunan MCK Komunal & Bedah Rumah (Kolaborasi)"
+                    },
+                    safety: {
+                        status: "Aman & Kooperatif",
+                        desc: "Warga sangat mengharapkan bantuan. Penerimaan terhadap mahasiswa sangat tinggi dan antusias. Aman."
+                    },
+                    fasum: {
+                        desc: "Sangat minim di area dalam. Sekolah SD kondisinya perlu perbaikan. Air bersih kadang sulit saat kemarau panjang.",
+                        hall: "Halaman Rumah Warga", mck: "Kurang (Perlu Dibangun)", health: "Jauh ke Puskesmas"
+                    }
+                }
+            },
+            {
+                id: 8,
+                name: "Desa Benteng",
+                district: "Ciampea",
+                zone: "Ring 3 (Batas Maksimal)",
+                mapQuery: "Desa+Benteng,+Ciampea",
+                details: {
+                    distance: {
+                        val: "16 KM", time: "±55 Menit",
+                        desc: "Ini adalah batas terjauh yang disarankan (< 1 Jam). Tantangan utama adalah macet di Jl. Raya Dramaga - Ciampea yang dipenuhi truk dan angkot. Waktu tempuh bisa molor jika hujan."
+                    },
+                    access: {
+                        type: "Jalan Raya Propinsi & Beton", bus: "Bus Besar Bisa", signal: "4G Kuat",
+                        desc: "Akses utama sangat lebar (jalan provinsi). Masuk ke jalan desa juga sudah beton mulus. Sangat mudah secara logistik, tapi capek di jalan karena macet."
+                    },
+                    env: {
+                        desc: "Merupakan 'Desa Pertanian Kampus'. Banyak lahan sawah produktif. Isu: Serangan hama wereng dan kurangnya minat pemuda menjadi petani modern.",
+                        proker: "Sekolah Tani Muda & Teknologi Drone Pertanian"
+                    },
+                    safety: {
+                        status: "Kondusif (Ramai)",
+                        desc: "Wilayah yang hidup 24 jam. Aman, tapi hati-hati kecelakaan lalu lintas karena jalur cepat."
+                    },
+                    fasum: {
+                        desc: "Lengkap. Dekat pasar Ciampea (mudah beli konsumsi/logistik). Listrik dan air aman.",
+                        hall: "Aula Kantor Desa Bagus", mck: "Baik", health: "Puskesmas Ciampea (Besar)"
+                    }
+                }
+            },
+            {
+                id: 9,
+                name: "Desa Cihideung Ilir",
+                district: "Ciampea",
+                zone: "Ring 3 (Sentra UKM)",
+                mapQuery: "Desa+Cihideung+Ilir,+Ciampea",
+                details: {
+                    distance: {
+                        val: "15.5 KM", time: "±50 Menit",
+                        desc: "Lokasi tidak jauh dari Kampus IPB Dramaga, masuk ke arah Ciampea. Jalanan relatif datar tidak menanjak."
+                    },
+                    access: {
+                        type: "Aspal & Beton", bus: "Medium Bus", signal: "4G Cukup",
+                        desc: "Jalan desa bisa dilalui mobil box (karena banyak pengiriman barang UKM). Agak macet karena aktivitas keluar masuk barang."
+                    },
+                    env: {
+                        desc: "Pusat industri tas dan dompet. Isu: Limbah kain perca (sisa produksi) yang sering dibakar sembarangan mencemari udara. Kesehatan K3 pengrajin juga rendah.",
+                        proker: "Pemanfaatan Limbah Perca & K3 Industri Rumahan"
+                    },
+                    safety: {
+                        status: "Aman (Lingkungan Kerja)",
+                        desc: "Desa sangat sibuk dengan aktivitas ekonomi. Keamanan terjamin karena warga sibuk bekerja. Jarang ada pengangguran yang nongkrong."
+                    },
+                    fasum: {
+                        desc: "Fasilitas ibadah cukup. Namun ruang terbuka hijau kurang karena padat rumah produksi.",
+                        hall: "Gudang/Workshop Warga", mck: "Cukup", health: "Klinik 24 Jam Ada"
+                    }
+                }
+            },
+            {
+                id: 10,
+                name: "Desa Petir",
+                district: "Dramaga (Ujung)",
+                zone: "Ring 3 (Pelosok Dekat)",
+                mapQuery: "Kantor+Desa+Petir,+Dramaga",
+                details: {
+                    distance: {
+                        val: "14 KM", time: "±45-50 Menit",
+                        desc: "Meskipun masuk Kec. Dramaga, lokasinya ada di ujung berbatasan dengan area hutan/kebun. Jalan menuju ke sana berliku dan sepi."
+                    },
+                    access: {
+                        type: "Jalan Sempit & Rusak", bus: "Tidak Bisa", signal: "3G/4G Tidak Stabil",
+                        desc: "Akses tersulit di daftar ini. Jalan sempit, banyak lubang, dan minim penerangan jalan umum (PJU). Sinyal sering hilang timbul (blank spot). Harus survey sinyal dulu."
+                    },
+                    env: {
+                        desc: "Suasana masih sangat asri namun tertinggal secara infrastruktur. Sekolah dasar kondisinya memprihatinkan. Minat baca anak-anak rendah.",
+                        proker: "Pojok Baca (Literasi) & Renovasi Fasilitas Sekolah"
+                    },
+                    safety: {
+                        status: "Aman (Guyub)",
+                        desc: "Warga sangat protektif terhadap tamu mahasiswa. Aman, tapi hindari pulang terlalu larut malam karena jalanan gelap gulita (seram/rawan begal di jalan akses, bukan di desanya)."
+                    },
+                    fasum: {
+                        desc: "Sangat terbatas. Air bersih mengandalkan sumur gali yang sering kering. Listrik sering byar-pet.",
+                        hall: "Sempit", mck: "Kurang Layak", health: "Jauh (Harus ke Dramaga)"
+                    }
+                }
+            }
+        ];
+
+        function init() {
+            renderSidebar();
+            loadVillage(1); // Load first village default
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('villageList');
+            list.innerHTML = '';
+            
+            villages.forEach(v => {
+                const el = document.createElement('div');
+                el.className = `village-item p-4 border-b border-slate-100 cursor-pointer transition flex flex-col gap-1 ${v.id === 1 ? 'active' : ''}`;
+                el.setAttribute('data-id', v.id);
+                el.onclick = () => {
+                    document.querySelectorAll('.village-item').forEach(i => i.classList.remove('active'));
+                    el.classList.add('active');
+                    loadVillage(v.id);
+                };
+
+                // Ring Color Logic
+                let badgeClass = "bg-blue-100 text-blue-700";
+                if(v.zone.includes("Ring 2")) badgeClass = "bg-teal-100 text-teal-700";
+                if(v.zone.includes("Ring 3")) badgeClass = "bg-amber-100 text-amber-700";
+
+                el.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold text-slate-700 text-sm">${v.name}</span>
+                        <span class="text-[10px] ${badgeClass} px-2 py-0.5 rounded font-bold uppercase tracking-wider">${v.zone.split(" ")[1]}</span>
+                    </div>
+                    <span class="text-xs text-slate-500 truncate">${v.district} • ${v.details.distance.val}</span>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        function loadVillage(id) {
+            const data = villages.find(v => v.id === id);
+            
+            // Generate Google Maps Link
+            const mapUrl = `https://www.google.com/maps/dir/${svCoords}/${data.mapQuery}`;
+            
+            // 1. Header
+            document.getElementById('headerName').innerText = data.name;
+            document.getElementById('headerDistrict').innerText = data.district;
+            document.getElementById('headerZone').innerText = data.zone;
+            
+            // Update Navigation Buttons
+            document.getElementById('btnMapsTop').href = mapUrl;
+            document.getElementById('linkMapContent').href = mapUrl;
+
+            // 2. Distance Section
+            document.getElementById('detDistance').innerText = data.details.distance.val;
+            document.getElementById('detTime').innerText = data.details.distance.time;
+            document.getElementById('descDistance').innerText = data.details.distance.desc;
+
+            // 3. Access Section
+            document.getElementById('descAccess').innerText = data.details.access.desc;
+            document.getElementById('specRoad').innerText = data.details.access.type;
+            document.getElementById('specBus').innerText = data.details.access.bus;
+            document.getElementById('specSignal').innerText = data.details.access.signal;
+
+            // 4. Env Section
+            document.getElementById('descEnv').innerText = data.details.env.desc;
+            document.getElementById('recProker').innerText = data.details.env.proker;
+
+            // 5. Safety Section
+            document.getElementById('descSafe').innerText = data.details.safety.desc;
+            document.getElementById('statusSafe').innerText = data.details.safety.status;
+
+            // 6. Fasum Section
+            document.getElementById('descFasum').innerText = data.details.fasum.desc;
+            document.getElementById('fasumHall').innerText = data.details.fasum.hall;
+            document.getElementById('fasumMck').innerText = data.details.fasum.mck;
+            document.getElementById('fasumHealth').innerText = data.details.fasum.health;
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
